@@ -1,0 +1,1273 @@
+﻿
+import { useState } from 'react'
+import './App.css'
+
+type Student = {
+  id: number
+  name: string
+  className: string
+  phone: string
+  parentPhone: string
+}
+
+type TaskStatus = 'Bekliyor' | 'TamamlandÄ±' | 'Eksik' | 'Ertelendi'
+
+type StudyTask = {
+  id: number
+  studentId: string
+  day: string
+  subject: string
+  unit: string
+  topic: string
+  source: string
+  test: string
+  questions: number
+  duration: number
+  startTime: string
+  status: TaskStatus
+}
+
+const days = [
+  'Pazartesi',
+  'SalÄ±',
+  'Ã‡arÅŸamba',
+  'PerÅŸembe',
+  'Cuma',
+  'Cumartesi',
+  'Pazar',
+]
+
+const subjectsByProgram: Record<string, string[]> = {
+  LGS: [
+    'TÃ¼rkÃ§e',
+    'Matematik',
+    'Fen Bilimleri',
+    'T.C. Ä°nkÄ±lap Tarihi',
+    'Din KÃ¼ltÃ¼rÃ¼',
+    'Ä°ngilizce',
+  ],
+  TYT: [
+    'TÃ¼rkÃ§e',
+    'Matematik',
+    'Geometri',
+    'Fizik',
+    'Kimya',
+    'Biyoloji',
+    'Tarih',
+    'CoÄŸrafya',
+    'Felsefe',
+    'Din KÃ¼ltÃ¼rÃ¼',
+  ],
+  AYT: [
+    'AYT Matematik',
+    'Geometri',
+    'Fizik',
+    'Kimya',
+    'Biyoloji',
+    'Edebiyat',
+    'Tarih',
+    'CoÄŸrafya',
+    'Felsefe',
+  ],
+}
+
+const units: Record<string, string[]> = {
+  Türkçe: [
+    'SÃ¶zcÃ¼kte Anlam',
+    'CÃ¼mlede Anlam',
+    'Paragraf',
+    'Dil Bilgisi',
+    'YazÄ±m ve Noktalama',
+  ],
+  Matematik: [
+    'SayÄ±lar',
+    'Ã‡arpanlar ve Katlar',
+    'ÃœslÃ¼ Ä°fadeler',
+    'KÃ¶klÃ¼ Ä°fadeler',
+    'Denklemler',
+    'Problemler',
+  ],
+  'Fen Bilimleri': [
+    'Mevsimlerin OluÅŸumu ve Ä°klim',
+    'DNA ve Genetik Kod',
+    'BasÄ±nÃ§',
+    'Madde ve EndÃ¼stri',
+  ],
+  'T.C. Ä°nkÄ±lap Tarihi': [
+    'Bir Kahraman DoÄŸuyor',
+    'Milli UyanÄ±ÅŸ',
+    'Milli Bir Destan',
+    'AtatÃ¼rkÃ§Ã¼lÃ¼k',
+  ],
+  'Din KÃ¼ltÃ¼rÃ¼': [
+    'Kader ve Kaza',
+    'ZekÃ¢t ve Sadaka',
+    'Din ve Hayat',
+  ],
+  Ä°ngilizce: [
+    'Friendship',
+    'Teen Life',
+    'In the Kitchen',
+    'On the Phone',
+  ],
+  Geometri: [
+    'ÃœÃ§genler',
+    'DÃ¶rtgenler',
+    'Ã‡okgenler',
+    'Ã‡ember ve Daire',
+  ],
+  Fizik: [
+    'Kuvvet ve Hareket',
+    'Enerji',
+    'Elektrik',
+    'Dalgalar',
+  ],
+  Kimya: [
+    'Atom ve Periyodik Sistem',
+    'Kimyasal TÃ¼rler',
+    'Maddenin Halleri',
+    'KarÄ±ÅŸÄ±mlar',
+  ],
+  Biyoloji: [
+    'HÃ¼cre',
+    'CanlÄ±larÄ±n YapÄ±sÄ±',
+    'KalÄ±tÄ±m',
+    'Ekosistem',
+  ],
+  Tarih: [
+    'Ä°lk TÃ¼rk Devletleri',
+    'OsmanlÄ± Devleti',
+    'Milli MÃ¼cadele',
+    'AtatÃ¼rk DÃ¶nemi',
+  ],
+  CoÄŸrafya: [
+    'DoÄŸal Sistemler',
+    'BeÅŸeri Sistemler',
+    'TÃ¼rkiye CoÄŸrafyasÄ±',
+  ],
+  Felsefe: [
+    'Felsefeye GiriÅŸ',
+    'Bilgi Felsefesi',
+    'VarlÄ±k Felsefesi',
+  ],
+  'AYT Matematik': [
+    'Fonksiyonlar',
+    'Polinomlar',
+    'Ä°kinci Dereceden Denklemler',
+    'Trigonometri',
+    'Logaritma',
+    'Limit',
+    'TÃ¼rev',
+    'Ä°ntegral',
+  ],
+  Edebiyat: [
+    'Åiir Bilgisi',
+    'EdebÃ® AkÄ±mlar',
+    'Cumhuriyet DÃ¶nemi',
+    'Halk EdebiyatÄ±',
+    'Divan EdebiyatÄ±',
+  ],
+}
+
+const topics: Record<string, string[]> = {
+  Paragraf: [
+    'Paragrafta Ana DÃ¼ÅŸÃ¼nce',
+    'Paragrafta YardÄ±mcÄ± DÃ¼ÅŸÃ¼nce',
+    'ParagrafÄ±n YapÄ±sÄ±',
+    'Paragraf Tamamlama',
+  ],
+  'Ã‡arpanlar ve Katlar': [
+    'Asal SayÄ±lar',
+    'Asal Ã‡arpanlara AyÄ±rma',
+    'EBOB',
+    'EKOK',
+    'AralarÄ±nda Asal SayÄ±lar',
+  ],
+  Problemler: [
+    'SayÄ± Problemleri',
+    'YaÅŸ Problemleri',
+    'HÄ±z Problemleri',
+    'YÃ¼zde Problemleri',
+  ],
+  BasÄ±nÃ§: [
+    'KatÄ± BasÄ±ncÄ±',
+    'SÄ±vÄ± BasÄ±ncÄ±',
+    'Gaz BasÄ±ncÄ±',
+  ],
+  'Mevsimlerin OluÅŸumu ve Ä°klim': [
+    'Mevsimlerin OluÅŸumu',
+    'Ä°klim ve Hava OlaylarÄ±',
+    'Hava Hareketleri',
+  ],
+  'DNA ve Genetik Kod': [
+    'DNA YapÄ±sÄ±',
+    'Genetik Kod',
+    'KalÄ±tÄ±m',
+  ],
+  Fonksiyonlar: [
+    'Fonksiyon KavramÄ±',
+    'Fonksiyon Ã‡eÅŸitleri',
+    'BileÅŸke Fonksiyon',
+  ],
+  TÃ¼rev: [
+    'TÃ¼rev TanÄ±mÄ±',
+    'TÃ¼rev Alma KurallarÄ±',
+    'TÃ¼rev UygulamalarÄ±',
+  ],
+  Ä°ntegral: [
+    'Belirsiz Ä°ntegral',
+    'Belirli Ä°ntegral',
+    'Ä°ntegral UygulamalarÄ±',
+  ],
+  ÃœÃ§genler: [
+    'ÃœÃ§gende AÃ§Ä±lar',
+    'Ã–zel ÃœÃ§genler',
+    'ÃœÃ§gende Alan',
+  ],
+}
+
+const sources = [
+  '345 YayÄ±nlarÄ±',
+  'Bilgi Sarmal',
+  '3D YayÄ±nlarÄ±',
+  'KarekÃ¶k',
+  'HÄ±z YayÄ±nlarÄ±',
+  'Limit YayÄ±nlarÄ±',
+  'Palme',
+  'MEB Kaynak',
+  'Orijinal YayÄ±nlarÄ±',
+  'Apotemi',
+  'Endemik',
+  'Paraf YayÄ±nlarÄ±',
+  'DiÄŸer',
+]
+function App() {
+  const [activeMenu, setActiveMenu] = useState('Genel BakÄ±ÅŸ')
+
+  const [students, setStudents] = useState<Student[]>([
+    {
+      id: 1,
+      name: 'Ã–rnek Ã–ÄŸrenci',
+      className: '8. SÄ±nÄ±f',
+      phone: '0555 111 22 33',
+      parentPhone: '0555 444 55 66',
+    },
+  ])
+
+  const [search, setSearch] = useState('')
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null)
+
+  const [selectedStudent, setSelectedStudent] = useState('1')
+  const [programType, setProgramType] = useState('LGS')
+  const [selectedSubject, setSelectedSubject] = useState('Matematik')
+  const [selectedUnit, setSelectedUnit] = useState('Ã‡arpanlar ve Katlar')
+  const [selectedTopic, setSelectedTopic] = useState('Asal SayÄ±lar')
+  const [selectedSource, setSelectedSource] = useState('345 YayÄ±nlarÄ±')
+  const [test, setTest] = useState('Test 1')
+  const [questions, setQuestions] = useState(20)
+  const [duration, setDuration] = useState(40)
+  const [startTime, setStartTime] = useState('16:00')
+  const [selectedDay, setSelectedDay] = useState('Pazartesi')
+
+  const [tasks, setTasks] = useState<StudyTask[]>([
+    {
+      id: 1,
+      studentId: '1',
+      day: 'Pazartesi',
+      subject: 'Matematik',
+      unit: 'Ã‡arpanlar ve Katlar',
+      topic: 'EBOB',
+      source: '345 YayÄ±nlarÄ±',
+      test: 'Test 7',
+      questions: 20,
+      duration: 45,
+      startTime: '16:00',
+      status: 'Bekliyor',
+    },
+    {
+      id: 2,
+      studentId: '1',
+      day: 'Pazartesi',
+      subject: 'TÃ¼rkÃ§e',
+      unit: 'Paragraf',
+      topic: 'Paragrafta Ana DÃ¼ÅŸÃ¼nce',
+      source: 'Bilgi Sarmal',
+      test: 'Test 3',
+      questions: 20,
+      duration: 30,
+      startTime: '17:00',
+      status: 'Bekliyor',
+    },
+    {
+      id: 3,
+      studentId: '1',
+      day: 'SalÄ±',
+      subject: 'Fen Bilimleri',
+      unit: 'BasÄ±nÃ§',
+      topic: 'SÄ±vÄ± BasÄ±ncÄ±',
+      source: 'HÄ±z YayÄ±nlarÄ±',
+      test: 'Test 4',
+      questions: 25,
+      duration: 40,
+      startTime: '16:30',
+      status: 'Bekliyor',
+    },
+  ])
+
+  const [newStudent, setNewStudent] = useState({
+    name: '',
+    className: '',
+    phone: '',
+    parentPhone: '',
+  })
+
+  const availableSubjects = subjectsByProgram[programType] || []
+  const availableUnits = units[selectedSubject] || []
+  const availableTopics = topics[selectedUnit] || []
+
+  const selectedStudentInfo = students.find(
+    (student) => String(student.id) === selectedStudent,
+  )
+
+  const studentTasks = tasks.filter(
+    (task) => task.studentId === selectedStudent,
+  )
+
+  const completedCount = studentTasks.filter(
+    (task) => task.status === 'TamamlandÄ±',
+  ).length
+
+  const totalQuestions = studentTasks.reduce(
+    (sum, task) => sum + task.questions,
+    0,
+  )
+
+  const totalMinutes = studentTasks.reduce(
+    (sum, task) => sum + task.duration,
+    0,
+  )
+
+  const completionRate = studentTasks.length
+    ? Math.round((completedCount / studentTasks.length) * 100)
+    : 0
+
+  function changeProgramType(type: string) {
+    setProgramType(type)
+
+    const firstSubject = subjectsByProgram[type][0]
+    const firstUnit = units[firstSubject]?.[0] || ''
+
+    setSelectedSubject(firstSubject)
+    setSelectedUnit(firstUnit)
+    setSelectedTopic(topics[firstUnit]?.[0] || '')
+  }
+
+  function addStudent() {
+    if (!newStudent.name.trim()) {
+      alert('LÃ¼tfen Ã¶ÄŸrenci adÄ±nÄ± yazÄ±n.')
+      return
+    }
+
+    const student: Student = {
+      id: Date.now(),
+      ...newStudent,
+    }
+
+    setStudents((current) => [...current, student])
+    setNewStudent({
+      name: '',
+      className: '',
+      phone: '',
+      parentPhone: '',
+    })
+  }
+
+  function deleteStudent(id: number) {
+    setStudents((current) =>
+      current.filter((student) => student.id !== id),
+    )
+    setTasks((current) =>
+      current.filter((task) => task.studentId !== String(id)),
+    )
+    if (selectedStudent === String(id)) setSelectedStudent('')
+  }
+
+  function saveStudent() {
+    if (!editingStudent) return
+
+    setStudents((current) =>
+      current.map((student) =>
+        student.id === editingStudent.id ? editingStudent : student,
+      ),
+    )
+    setEditingStudent(null)
+  }
+
+  function downloadWeeklyProgram() {
+    if (!selectedStudentInfo) {
+      alert('LÃ¼tfen Ã¶nce Ã¶ÄŸrenci seÃ§in.')
+      return
+    }
+
+    const escapeHtml = (value: string) =>
+      value.replace(/[&<>"']/g, (character) => {
+        const entities: Record<string, string> = {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;',
+        }
+        return entities[character]
+      })
+
+    const dayColumns = days.map((day) => {
+      const dayTasks = studentTasks.filter((task) => task.day === day)
+
+      return `
+        <section class="day">
+          <h2>${day}</h2>
+          ${
+            dayTasks.length
+              ? dayTasks.map((task) => `
+                <article class="task">
+                  <div class="task-heading">
+                    <strong>${escapeHtml(task.subject)}</strong>
+                    <span>${escapeHtml(task.startTime)}</span>
+                  </div>
+                  <div class="topic">${escapeHtml(task.topic)}</div>
+                  <div class="detail">${escapeHtml(task.unit)}</div>
+                  <div class="detail">Kaynak: ${escapeHtml(task.source)}</div>
+                  <div class="detail">${escapeHtml(task.test)}</div>
+                  <div class="target">
+                    <span>â˜ ${task.questions} soru</span>
+                    <span>${task.duration} dk</span>
+                  </div>
+                  <div class="status">
+                    <input type="checkbox" ${task.status === 'TamamlandÄ±' ? 'checked' : ''} />
+                    <span>TamamlandÄ±</span>
+                  </div>
+                </article>
+              `).join('')
+              : '<p class="empty">PlanlanmÄ±ÅŸ Ã§alÄ±ÅŸma yok.</p>'
+          }
+        </section>
+      `
+    }).join('')
+
+    const printWindow = window.open('', '_blank')
+
+    if (!printWindow) {
+      alert('PDF ekranÄ± aÃ§Ä±lamadÄ±. LÃ¼tfen tarayÄ±cÄ±nÄ±zda aÃ§Ä±lÄ±r pencerelere izin verin.')
+      return
+    }
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html lang="tr">
+      <head>
+        <meta charset="UTF-8" />
+        <title>Kuantum Plus - HaftalÄ±k Ã‡alÄ±ÅŸma ProgramÄ±</title>
+        <style>
+          @page {
+            size: A4 landscape;
+            margin: 8mm;
+          }
+
+          * {
+            box-sizing: border-box;
+          }
+
+          body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: #1b2d4c;
+            background: white;
+          }
+
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 13px 18px;
+            color: white;
+            background: #173d7a;
+            border-radius: 10px;
+          }
+
+          .brand {
+            font-size: 19px;
+            font-weight: 800;
+          }
+
+          .subtitle {
+            margin-top: 4px;
+            color: #d8e6ff;
+            font-size: 10px;
+          }
+
+          .week {
+            text-align: right;
+            font-size: 11px;
+            line-height: 1.7;
+          }
+
+          .student-info {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin: 12px 0;
+            padding: 10px 13px;
+            border: 1px solid #dce5f3;
+            border-radius: 8px;
+            font-size: 11px;
+          }
+
+          .student-info strong {
+            color: #173d7a;
+          }
+
+          .days {
+            display: grid;
+            grid-template-columns: repeat(7, minmax(0, 1fr));
+            gap: 7px;
+            align-items: stretch;
+          }
+
+          .day {
+            min-height: 340px;
+            padding: 7px;
+            border: 1px solid #dce5f3;
+            border-radius: 8px;
+            background: #f8faff;
+            break-inside: avoid;
+          }
+
+          .day h2 {
+            margin: -7px -7px 8px;
+            padding: 9px 3px;
+            border-radius: 7px 7px 0 0;
+            background: #e8f0ff;
+            color: #17458f;
+            text-align: center;
+            font-size: 10px;
+          }
+
+          .task {
+            margin-bottom: 7px;
+            padding: 8px;
+            border: 1px solid #dce6f5;
+            border-left: 3px solid #3478e8;
+            border-radius: 6px;
+            background: white;
+            break-inside: avoid;
+          }
+
+          .task-heading {
+            display: flex;
+            justify-content: space-between;
+            gap: 4px;
+            color: #2458a6;
+            font-size: 9px;
+          }
+
+          .topic {
+            margin: 7px 0 5px;
+            font-size: 9px;
+            font-weight: 700;
+            line-height: 1.4;
+          }
+
+          .detail {
+            margin: 3px 0;
+            color: #64748b;
+            font-size: 8px;
+            line-height: 1.3;
+            overflow-wrap: anywhere;
+          }
+
+          .target {
+            display: flex;
+            justify-content: space-between;
+            gap: 4px;
+            margin-top: 7px;
+            padding-top: 6px;
+            border-top: 1px solid #edf1f7;
+            color: #244d8b;
+            font-size: 8px;
+            font-weight: 700;
+          }
+
+          .status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 7px;
+            color: #64748b;
+            font-size: 8px;
+          }
+
+          .status input {
+            width: 11px;
+            height: 11px;
+            margin: 0;
+          }
+
+          .empty {
+            padding: 12px 3px;
+            color: #94a3b8;
+            text-align: center;
+            font-size: 8px;
+            line-height: 1.5;
+          }
+
+          .motivation {
+            margin-top: 11px;
+            padding: 10px;
+            border: 1px solid #d9e6fb;
+            border-radius: 8px;
+            background: #f0f5ff;
+            color: #21477f;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 700;
+          }
+
+          .motivation small {
+            display: block;
+            margin-top: 4px;
+            color: #7184a3;
+            font-size: 8px;
+            font-weight: 400;
+          }
+
+          .footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            color: #8793a7;
+            font-size: 8px;
+          }
+        </style>
+      </head>
+      <body>
+        <header class="header">
+          <div>
+            <div class="brand">âœ¦ KUANTUM PLUS</div>
+            <div class="subtitle">HAFTALIK Ã‡ALIÅMA PROGRAMI</div>
+          </div>
+          <div class="week">
+            <strong>${programType} HAZIRLIK PROGRAMI</strong><br />
+            23 â€“ 29 KasÄ±m 2026
+          </div>
+        </header>
+
+        <div class="student-info">
+          <span>Ã–ÄRENCÄ°: <strong>${escapeHtml(selectedStudentInfo.name)}</strong></span>
+          <span>SINIF: <strong>${escapeHtml(selectedStudentInfo.className)}</strong></span>
+          <span>TOPLAM SORU HEDEFÄ°: <strong>${totalQuestions}</strong></span>
+          <span>PLANLANAN SÃœRE: <strong>${Math.floor(totalMinutes / 60)} sa ${totalMinutes % 60} dk</strong></span>
+        </div>
+
+        <main class="days">
+          ${dayColumns}
+        </main>
+
+        <div class="motivation">
+          â€œBaÅŸarÄ±, her gÃ¼n atÄ±lan kÃ¼Ã§Ã¼k ama kararlÄ± adÄ±mlarÄ±n sonucudur.â€
+          <small>BugÃ¼n elinden geleni yap, yarÄ±n kendinin daha iyi bir hÃ¢li ol.</small>
+        </div>
+
+        <div class="footer">
+          <span>Kuantum Plus EÄŸitim YÃ¶netim Sistemi</span>
+          <span>PlanÄ±nÄ± uygula â€¢ Ä°lerlemeni takip et â€¢ Hedefine yaklaÅŸ</span>
+        </div>
+      </body>
+      </html>
+    `)
+
+    printWindow.document.close()
+    printWindow.focus()
+    printWindow.print()
+  }
+
+  function addTask() {
+    if (!selectedStudent) {
+      alert('LÃ¼tfen Ã¶nce Ã¶ÄŸrenci seÃ§in.')
+      return
+    }
+
+    if (!selectedTopic.trim()) {
+      alert('LÃ¼tfen bir konu seÃ§in.')
+      return
+    }
+
+    const newTask: StudyTask = {
+      id: Date.now(),
+      studentId: selectedStudent,
+      day: selectedDay,
+      subject: selectedSubject,
+      unit: selectedUnit,
+      topic: selectedTopic,
+      source: selectedSource,
+      test,
+      questions: Number(questions),
+      duration: Number(duration),
+      startTime,
+      status: 'Bekliyor',
+    }
+
+    setTasks((current) => [...current, newTask])
+  }
+
+  function deleteTask(id: number) {
+    setTasks((current) => current.filter((task) => task.id !== id))
+  }
+
+  function updateTaskStatus(id: number, status: TaskStatus) {
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === id ? { ...task, status } : task,
+      ),
+    )
+  }
+
+  function handleSubjectChange(subject: string) {
+    setSelectedSubject(subject)
+    const firstUnit = units[subject]?.[0] || ''
+    setSelectedUnit(firstUnit)
+    setSelectedTopic(topics[firstUnit]?.[0] || '')
+  }
+
+  function handleUnitChange(unit: string) {
+    setSelectedUnit(unit)
+    setSelectedTopic(topics[unit]?.[0] || '')
+  }
+
+  function handleDrop(day: string, e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    const taskId = Number(e.dataTransfer.getData('taskId'))
+    if (!taskId) return
+
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === taskId ? { ...task, day } : task,
+      ),
+    )
+  }
+
+  const filteredStudents = students.filter(
+    (student) =>
+      student.name.toLowerCase().includes(search.toLowerCase()) ||
+      student.className.toLowerCase().includes(search.toLowerCase()),
+  )
+
+  return (
+    <div className="app-shell">
+      <aside className="sidebar">
+        <div className="brand">
+          <div className="brand-mark">âœ¦</div>
+          <div>
+            <strong>Kuantum Plus</strong>
+            <span>EÄŸitim YÃ¶netim Sistemi</span>
+          </div>
+        </div>
+
+        <div className="menu-title">YÃ–NETÄ°M</div>
+
+        <nav>
+          {[
+            'Genel BakÄ±ÅŸ',
+            'Ã–ÄŸrenci YÃ¶netimi',
+            'Ã–ÄŸretmen YÃ¶netimi',
+            'Veli YÃ¶netimi',
+            'Akademik Takip',
+            'Kaynak KÃ¼tÃ¼phanesi',
+            'HaftalÄ±k Programlar',
+            'Deneme SÄ±navlarÄ±',
+            'Rehberlik GÃ¶rÃ¼ÅŸmeleri',
+            'Raporlar',
+            'Ayarlar',
+          ].map((menu) => (
+            <button
+              key={menu}
+              className={activeMenu === menu ? 'menu-item active' : 'menu-item'}
+              onClick={() => setActiveMenu(menu)}
+            >
+              <span className="menu-icon">â—†</span>
+              {menu}
+            </button>
+          ))}
+        </nav>
+
+        <div className="sidebar-bottom">
+          <div className="profile-card">
+            <div className="avatar">T</div>
+            <div>
+              <strong>Rehberlik</strong>
+              <span>YÃ¶netici</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main className="main-content">
+        <header className="topbar">
+          <div>
+            <div className="breadcrumb">Kuantum Plus / {activeMenu}</div>
+            <h1>{activeMenu}</h1>
+          </div>
+          <div className="top-actions">
+            <div className="notification">ğŸ””</div>
+            <div className="top-profile">T</div>
+          </div>
+        </header>
+
+        {activeMenu === 'Genel BakÄ±ÅŸ' && (
+          <section className="dashboard">
+            <div className="welcome-card">
+              <div>
+                <span className="eyebrow">KUANTUM PLUS</span>
+                <h2>HoÅŸ geldiniz.</h2>
+                <p>Ã–ÄŸrencilerin akademik ve rehberlik sÃ¼reÃ§lerini tek merkezden yÃ¶netin.</p>
+              </div>
+              <div className="welcome-icon">âœ¦</div>
+            </div>
+
+            <div className="stats-grid">
+              <div className="stat-card">
+                <span>Ã–ÄRENCÄ°LER</span>
+                <strong>{students.length}</strong>
+                <small>Aktif Ã¶ÄŸrenci</small>
+              </div>
+              <div className="stat-card">
+                <span>Ã–ÄRETMENLER</span>
+                <strong>0</strong>
+                <small>TanÄ±mlÄ± Ã¶ÄŸretmen</small>
+              </div>
+              <div className="stat-card">
+                <span>Ã‡ALIÅMA GÃ–REVLERÄ°</span>
+                <strong>{tasks.length}</strong>
+                <small>TanÄ±mlÄ± gÃ¶rev</small>
+              </div>
+              <div className="stat-card">
+                <span>TAMAMLANAN</span>
+                <strong>{tasks.filter((task) => task.status === 'TamamlandÄ±').length}</strong>
+                <small>Ã‡alÄ±ÅŸma gÃ¶revi</small>
+              </div>
+            </div>
+
+            <div className="dashboard-grid">
+              <div className="panel">
+                <div className="panel-title">
+                  <div>
+                    <span className="eyebrow">HIZLI Ä°ÅLEMLER</span>
+                    <h3>BugÃ¼n ne yapmak istiyorsunuz?</h3>
+                  </div>
+                </div>
+                <div className="quick-actions">
+                  <button onClick={() => setActiveMenu('Ã–ÄŸrenci YÃ¶netimi')}>+ Ã–ÄŸrenci Ekle</button>
+                  <button onClick={() => setActiveMenu('HaftalÄ±k Programlar')}>+ HaftalÄ±k Program</button>
+                  <button onClick={() => setActiveMenu('Deneme SÄ±navlarÄ±')}>+ Deneme Ekle</button>
+                </div>
+              </div>
+
+              <div className="panel">
+                <div className="panel-title">
+                  <div>
+                    <span className="eyebrow">SÄ°STEM</span>
+                    <h3>Genel durum</h3>
+                  </div>
+                </div>
+                <div className="system-list">
+                  <div><span>Ã–ÄŸrenci sistemi</span><strong>Aktif</strong></div>
+                  <div><span>Program oluÅŸturucu</span><strong>Aktif</strong></div>
+                  <div><span>Kaynak kÃ¼tÃ¼phanesi</span><strong>GeliÅŸtiriliyor</strong></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activeMenu === 'Ã–ÄŸrenci YÃ¶netimi' && (
+          <section className="students-page">
+            <div className="page-intro">
+              <div>
+                <span className="eyebrow">Ã–ÄRENCÄ° YÃ–NETÄ°MÄ°</span>
+                <h2>Ã–ÄŸrenciler</h2>
+                <p>Ã–ÄŸrenci bilgilerini ekleyin, dÃ¼zenleyin ve takip edin.</p>
+              </div>
+            </div>
+
+            <div className="student-form panel">
+              <div className="form-grid">
+                <input
+                  placeholder="Ã–ÄŸrenci adÄ± soyadÄ±"
+                  value={newStudent.name}
+                  onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
+                />
+                <input
+                  placeholder="SÄ±nÄ±f (Ã–rn. 8. SÄ±nÄ±f)"
+                  value={newStudent.className}
+                  onChange={(e) => setNewStudent({ ...newStudent, className: e.target.value })}
+                />
+                <input
+                  placeholder="Ã–ÄŸrenci telefonu"
+                  value={newStudent.phone}
+                  onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })}
+                />
+                <input
+                  placeholder="Veli telefonu"
+                  value={newStudent.parentPhone}
+                  onChange={(e) => setNewStudent({ ...newStudent, parentPhone: e.target.value })}
+                />
+                <button onClick={addStudent}>+ Ã–ÄŸrenci Ekle</button>
+              </div>
+            </div>
+
+            <div className="panel">
+              <div className="table-toolbar">
+                <div>
+                  <span className="eyebrow">KAYITLI Ã–ÄRENCÄ°LER</span>
+                  <h3>{students.length} Ã¶ÄŸrenci</h3>
+                </div>
+                <input
+                  className="search-input"
+                  placeholder="Ã–ÄŸrenci ara..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+
+              <div className="student-table">
+                <div className="table-head">
+                  <span>Ã–ÄRENCÄ°</span><span>SINIF</span><span>TELEFON</span><span>VELÄ° TELEFONU</span><span>Ä°ÅLEM</span>
+                </div>
+                {filteredStudents.map((student) => (
+                  <div className="table-row" key={student.id}>
+                    <span className="student-name">{student.name}</span>
+                    <span>{student.className}</span>
+                    <span>{student.phone}</span>
+                    <span>{student.parentPhone}</span>
+                    <span className="table-actions">
+                      <button onClick={() => setEditingStudent(student)}>DÃ¼zenle</button>
+                      <button className="danger" onClick={() => deleteStudent(student.id)}>Sil</button>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {activeMenu === 'HaftalÄ±k Programlar' && (
+          <section className="program-page">
+            <div className="program-hero">
+              <div>
+                <span className="eyebrow light">KUANTUM PLUS â€¢ Ã‡ALIÅMA PLANLAMA</span>
+                <h2>AkÄ±llÄ± haftalÄ±k program oluÅŸturucu</h2>
+                <p>LGS ve YKS Ã¶ÄŸrencileri iÃ§in konu, kaynak, saat ve Ã§alÄ±ÅŸma takibi.</p>
+              </div>
+              <div className="program-hero-icon">âœ¦</div>
+            </div>
+
+            <div className="program-toolbar">
+              <div className="program-student">
+                <label>Ã–ÄRENCÄ°</label>
+                <select
+                  value={selectedStudent}
+                  onChange={(e) => setSelectedStudent(e.target.value)}
+                >
+                  <option value="">Ã–ÄŸrenci seÃ§in</option>
+                  {students.map((student) => (
+                    <option key={student.id} value={student.id}>
+                      {student.name} â€” {student.className}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="program-student">
+                <label>PROGRAM TÃœRÃœ</label>
+                <select
+                  value={programType}
+                  onChange={(e) => changeProgramType(e.target.value)}
+                >
+                  <option value="LGS">8. SÄ±nÄ±f â€¢ LGS</option>
+                  <option value="TYT">12. SÄ±nÄ±f â€¢ TYT</option>
+                  <option value="AYT">12. SÄ±nÄ±f â€¢ AYT</option>
+                </select>
+              </div>
+
+              <div className="program-week">
+                <span>PROGRAM HAFTASI</span>
+                <strong>23 â€“ 29 KasÄ±m 2026</strong>
+              </div>
+            </div>
+
+            <div className="stats-grid program-stats">
+              <div className="stat-card">
+                <span>TOPLAM GÃ–REV</span>
+                <strong>{studentTasks.length}</strong>
+                <small>Bu Ã¶ÄŸrencinin programÄ±</small>
+              </div>
+              <div className="stat-card">
+                <span>TAMAMLANAN</span>
+                <strong>{completedCount}</strong>
+                <small>GÃ¶rev</small>
+              </div>
+              <div className="stat-card">
+                <span>HEDEFLENEN SORU</span>
+                <strong>{totalQuestions}</strong>
+                <small>Toplam soru</small>
+              </div>
+              <div className="stat-card">
+                <span>PLANLANAN SÃœRE</span>
+                <strong>{Math.floor(totalMinutes / 60)} sa {totalMinutes % 60} dk</strong>
+                <small>Toplam Ã§alÄ±ÅŸma</small>
+              </div>
+            </div>
+
+            <div className="panel program-progress-panel">
+              <div className="table-toolbar">
+                <div>
+                  <span className="eyebrow">HAFTALIK Ä°LERLEME</span>
+                  <h3>Program tamamlama oranÄ±</h3>
+                </div>
+                <strong>{completionRate}%</strong>
+              </div>
+              <div className="progress-track">
+                <div className="progress-fill" style={{ width: `${completionRate}%` }} />
+              </div>
+            </div>
+
+            <div className="program-builder">
+              <div className="program-library">
+                <div className="library-header">
+                  <span className="eyebrow">Ã‡ALIÅMA HAVUZU</span>
+                  <h3>Yeni Ã§alÄ±ÅŸma ekle</h3>
+                  <p>Ders, konu, kaynak ve Ã§alÄ±ÅŸma saatini belirleyin.</p>
+                </div>
+
+                <div className="program-field">
+                  <label>DERS</label>
+                  <select value={selectedSubject} onChange={(e) => handleSubjectChange(e.target.value)}>
+                    {availableSubjects.map((subject) => <option key={subject}>{subject}</option>)}
+                  </select>
+                </div>
+
+                <div className="program-field">
+                  <label>ÃœNÄ°TE / KONU ALANI</label>
+                  <select value={selectedUnit} onChange={(e) => handleUnitChange(e.target.value)}>
+                    {availableUnits.map((unit) => <option key={unit}>{unit}</option>)}
+                  </select>
+                </div>
+
+                <div className="program-field">
+                  <label>KONU</label>
+                  {availableTopics.length > 0 ? (
+                    <select value={selectedTopic} onChange={(e) => setSelectedTopic(e.target.value)}>
+                      {availableTopics.map((topic) => <option key={topic}>{topic}</option>)}
+                    </select>
+                  ) : (
+                    <input
+                      value={selectedTopic}
+                      onChange={(e) => setSelectedTopic(e.target.value)}
+                      placeholder="Konu adÄ±nÄ± yazÄ±n"
+                    />
+                  )}
+                </div>
+
+                <div className="program-field">
+                  <label>KAYNAK / KÄ°TAP</label>
+                  <select value={selectedSource} onChange={(e) => setSelectedSource(e.target.value)}>
+                    {sources.map((source) => <option key={source}>{source}</option>)}
+                  </select>
+                </div>
+
+                <div className="program-row">
+                  <div className="program-field">
+                    <label>TEST</label>
+                    <input value={test} onChange={(e) => setTest(e.target.value)} placeholder="Test 1" />
+                  </div>
+                  <div className="program-field">
+                    <label>SORU HEDEFÄ°</label>
+                    <input type="number" min="1" value={questions} onChange={(e) => setQuestions(Number(e.target.value))} />
+                  </div>
+                </div>
+
+                <div className="program-row">
+                  <div className="program-field">
+                    <label>BAÅLANGIÃ‡ SAATÄ°</label>
+                    <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+                  </div>
+                  <div className="program-field">
+                    <label>SÃœRE (DAKÄ°KA)</label>
+                    <input type="number" min="5" value={duration} onChange={(e) => setDuration(Number(e.target.value))} />
+                  </div>
+                </div>
+
+                <div className="program-field">
+                  <label>Ã‡ALIÅMA GÃœNÃœ</label>
+                  <select value={selectedDay} onChange={(e) => setSelectedDay(e.target.value)}>
+                    {days.map((day) => <option key={day}>{day}</option>)}
+                  </select>
+                </div>
+
+                <button className="program-add-button" onClick={addTask}>
+                  + Programa Ekle
+                </button>
+
+                <div className="drag-info">
+                  <span>â†”</span>
+                  <div>
+                    <strong>SÃ¼rÃ¼kle & bÄ±rak</strong>
+                    <p>Ã‡alÄ±ÅŸmalarÄ± haftanÄ±n farklÄ± gÃ¼nlerine taÅŸÄ±yabilirsiniz.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="weekly-board">
+                <div className="board-header">
+                  <div>
+                    <span className="eyebrow">HAFTALIK PROGRAM</span>
+                    <h3>{selectedStudentInfo?.name || 'Ã–ÄŸrenci seÃ§ilmedi'}</h3>
+                    <p>{programType} Ã§alÄ±ÅŸma planÄ±</p>
+                  </div>
+                  <div className="board-actions">
+  <button>â† Ã–nceki Hafta</button>
+  <button>Bu Hafta</button>
+  <button>Sonraki Hafta â†’</button>
+  <button onClick={downloadWeeklyProgram}>
+    ğŸ“„ PDF / YazdÄ±r
+  </button>
+</div>
+                </div>
+
+                <div className="week-grid">
+                  {days.map((day) => {
+                    const dayTasks = studentTasks.filter((task) => task.day === day)
+
+                    return (
+                      <div
+                        className="day-column"
+                        key={day}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => handleDrop(day, e)}
+                      >
+                        <div className="day-header">
+                          <strong>{day}</strong>
+                          <span>{dayTasks.length}</span>
+                        </div>
+
+                        <div className="day-content">
+                          {dayTasks.length === 0 && (
+                            <div className="drop-zone">
+                              <span>+</span>
+                              <p>Ã‡alÄ±ÅŸmayÄ± buraya sÃ¼rÃ¼kleyin</p>
+                            </div>
+                          )}
+
+                          {dayTasks.map((task) => (
+                            <div
+                              className="study-card"
+                              key={task.id}
+                              draggable
+                              onDragStart={(e) => e.dataTransfer.setData('taskId', String(task.id))}
+                            >
+                              <div className="study-card-top">
+                                <span className="subject-badge">{task.subject}</span>
+                                <button className="card-delete" onClick={() => deleteTask(task.id)}>Ã—</button>
+                              </div>
+
+                              <strong className="study-topic">{task.topic}</strong>
+                              <div className="study-source">{task.unit} Â· {task.source}</div>
+
+                              <div className="study-details">
+                                <span>{task.startTime}</span>
+                                <span>{task.duration} dk</span>
+                                <span>{task.questions} soru</span>
+                              </div>
+
+                              <div className="study-source">{task.test}</div>
+
+                              <select
+                                className={`task-status ${task.status.toLowerCase().replace('Ä±', 'i')}`}
+                                value={task.status}
+                                onChange={(e) => updateTaskStatus(task.id, e.target.value as TaskStatus)}
+                              >
+                                <option>Bekliyor</option>
+                                <option>TamamlandÄ±</option>
+                                <option>Eksik</option>
+                                <option>Ertelendi</option>
+                              </select>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {![
+          'Genel BakÄ±ÅŸ',
+          'Ã–ÄŸrenci YÃ¶netimi',
+          'HaftalÄ±k Programlar',
+        ].includes(activeMenu) && (
+          <section className="empty-page">
+            <div className="empty-card">
+              <div>âœ¦</div>
+              <h2>{activeMenu}</h2>
+              <p>Bu modÃ¼l bir sonraki geliÅŸtirme aÅŸamasÄ±nda hazÄ±rlanacak.</p>
+            </div>
+          </section>
+        )}
+      </main>
+
+      {editingStudent && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <div>
+                <span className="eyebrow">Ã–ÄRENCÄ° DÃœZENLE</span>
+                <h2>Ã–ÄŸrenci bilgileri</h2>
+              </div>
+              <button onClick={() => setEditingStudent(null)}>Ã—</button>
+            </div>
+
+            <div className="modal-form">
+              <input
+                value={editingStudent.name}
+                onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
+                placeholder="Ad Soyad"
+              />
+              <input
+                value={editingStudent.className}
+                onChange={(e) => setEditingStudent({ ...editingStudent, className: e.target.value })}
+                placeholder="SÄ±nÄ±f"
+              />
+              <input
+                value={editingStudent.phone}
+                onChange={(e) => setEditingStudent({ ...editingStudent, phone: e.target.value })}
+                placeholder="Ã–ÄŸrenci telefonu"
+              />
+              <input
+                value={editingStudent.parentPhone}
+                onChange={(e) => setEditingStudent({ ...editingStudent, parentPhone: e.target.value })}
+                placeholder="Veli telefonu"
+              />
+              <button onClick={saveStudent}>DeÄŸiÅŸiklikleri Kaydet</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default App
+
